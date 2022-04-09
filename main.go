@@ -161,6 +161,7 @@ func (iv *invoicer) postInvoice(w http.ResponseWriter, r *http.Request) {
 	iv.db.Last(&i1)
 	log.Printf("%+v\n", i1)
 	w.WriteHeader(http.StatusCreated)
+	w.Header().Add("Content-Type-Options", "nosniff")
 	w.Write([]byte(fmt.Sprintf("created invoice %d", i1.ID)))
 }
 
@@ -187,6 +188,7 @@ func (iv *invoicer) putInvoice(w http.ResponseWriter, r *http.Request) {
 	iv.db.First(&i1, vars["id"])
 	log.Printf("%+v\n", i1)
 	w.WriteHeader(http.StatusAccepted)
+	w.Header().Add("Content-Type-Options", "nosniff")
 	w.Write([]byte(fmt.Sprintf("updated invoice %d", i1.ID)))
 }
 
@@ -194,6 +196,7 @@ func (iv *invoicer) deleteInvoice(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	if !checkCSRFToken(r.Header.Get("X-CSRF-Token")) {
 		w.WriteHeader(http.StatusNotAcceptable)
+		w.Header().Add("Content-Type-Options", "nosniff")
 		w.Write([]byte("Invalid CSRF Token"))
 		return
 	}
@@ -204,6 +207,7 @@ func (iv *invoicer) deleteInvoice(w http.ResponseWriter, r *http.Request) {
 	i1.ID = uint(id)
 	iv.db.Delete(&i1)
 	w.WriteHeader(http.StatusAccepted)
+	w.Header().Add("Content-Type-Options", "nosniff")
 	w.Write([]byte(fmt.Sprintf("deleted invoice %d", i1.ID)))
 }
 
@@ -307,12 +311,14 @@ func (iv *invoicer) getAuthenticate(w http.ResponseWriter, r *http.Request) {
 func (iv *invoicer) getOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 	if !checkCSRFToken(r.FormValue("state")) {
 		w.WriteHeader(http.StatusNotAcceptable)
+		w.Header().Add("Content-Type-Options", "nosniff")
 		w.Write([]byte("Failed to verify oauth state via CSRF token '" + r.FormValue("state") + "'"))
 		return
 	}
 	token, err := oauthCfg.Exchange(oauth2.NoContext, r.FormValue("code"))
 	if err != nil {
 		w.WriteHeader(http.StatusNotAcceptable)
+		w.Header().Add("Content-Type-Options", "nosniff")
 		w.Write([]byte("Failed to obtain token from oauth code " + r.FormValue("code")))
 		return
 	}
@@ -321,6 +327,7 @@ func (iv *invoicer) getOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.Get(`https://www.googleapis.com/oauth2/v1/userinfo?alt=json`)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Add("Content-Type-Options", "nosniff")
 		w.Write([]byte("Failed to retrieve user information from IDP"))
 		return
 	}
@@ -339,6 +346,7 @@ func (iv *invoicer) getOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 	session, err := iv.store.Get(r, "session")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Add("Content-Type-Options", "nosniff")
 		w.Write([]byte("Failed to create session for user"))
 		return
 	}
